@@ -16,6 +16,8 @@ Both of them uses Microsoft Identity packages avaliable at nuget.org repository.
 
 Applcation uses two Public APIs, [Google Identity Service](https://developers.google.com/identity/gsi/web/guides/overview) and [RandomDUK](https://www.google.com)
 
+Data is persited using sqlite database, and accessed with help of [Entity Framework Core 7](https://github.com/dotnet/efcore)
+
 # Blazor and Blazor WASM
 
 Code is run inside browser thanks to [WebAssembly](https://webassembly.org/) The Wasm stack machine is designed to be encoded in a size- and load-time-efficient binary format. <\*WebAssembly aims to execute at native speed by taking advantage of common hardware capabilities available on a wide range of platforms.>
