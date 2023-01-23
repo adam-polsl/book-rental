@@ -1,0 +1,171 @@
+﻿@page "/admin/usersview"
+@using BlazorStudiesProject.Shared.Dtos;
+@inject HttpClient Http;
+@inject ISnackbar Snackbar;
+@inject IDialogService DialogService;
+@attribute [Authorize(Roles = "Admin")]
+
+
+<PageTitle>Admin Users View </PageTitle>
+<MudSwitch @bind-Checked="customstr" Color="Color.Error" Converter="@(new CustomStringToBoolConverter())">@(customstr)s</MudSwitch>
+@*<MudSwitch @bind-Checked="Admin" Color="Color.Error">Admin</MudSwitch>*@
+<MudTable Items="@Users" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+    <HeaderContent>
+        <MudTh>UserId</MudTh>
+        <MudTh>UserName</MudTh>
+        <MudTh> </MudTh>
+        <MudTh> </MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="UserId">@context.UserId</MudTd>
+        <MudTd DataLabel="UserName">@context.UserName</MudTd>
+        <MudTd>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="@( ()=> DeleteUser(context.UserName))">Delete</MudButton>
+        </MudTd>
+        @if (_customstr == "User")
+        {
+            <MudTd>
+                <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@( ()=> PromoteUserToAdmin(context.UserName))">Promote</MudButton>
+            </MudTd>
+        }
+    </RowTemplate>
+</MudTable>
+
+
+@code {
+    private string _customstr = "User";
+    public string customstr
+    {
+        get => _customstr; 
+        set { _customstr = value; GetContent(value);  }
+    }
+    private bool _loading = false;
+
+
+    private IList<UserAdminViewDto>? Users { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetContent();
+    }
+
+    private async Task GetContent(string role="User")
+    {
+        _loading = true;
+        if (string.IsNullOrEmpty(_customstr))
+        {
+            return;
+        }
+        Users = await Http.GetFromJsonAsync<IList<UserAdminViewDto>>($"api/Users/{role}");
+        await Task.Delay(500);
+        _loading = false;
+        StateHasChanged();
+    }
+
+    private async Task DeleteUser(string userName)
+    {
+        try
+        {
+            var parameters = new DialogParameters();
+            parameters.Add("ContentText", "Do you really want to delete these records? This process cannot be undone.");
+            parameters.Add("ButtonText", "Delete");
+            parameters.Add("Color", Color.Error);
+
+            var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+            var dialogResult = await DialogService.Show<Dialog>("Delete", parameters, options).Result;
+            if (dialogResult.Cancelled)
+            {
+                return;
+            }
+
+                var result = await Http.DeleteAsync($"api/Users/{userName}");
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new Exception("...");
+            }
+            Snackbar.Add("User Deleted Successfuly", Severity.Success);
+            await GetContent();
+            StateHasChanged();
+
+        }
+        catch
+        {
+            Snackbar.Add("Error while deleting user", Severity.Error);
+
+        }
+
+    }
+
+    private async Task PromoteUserToAdmin(string userName)
+    {
+        try
+        {
+            var result = await Http.PostAsync($"api/Users/{userName}", null);
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new Exception("...");
+            }
+            Snackbar.Add("User Promoted to Admin Successfuly", Severity.Success);
+            await GetContent();
+            StateHasChanged();
+
+        }
+        catch
+        {
+            Snackbar.Add("Error while promoting user", Severity.Error);
+
+        }
+
+    }
+    public class CustomStringToBoolConverter : BoolConverter<string>
+    {
+
+        public CustomStringToBoolConverter()
+        {
+
+            SetFunc = OnSet;
+            GetFunc = OnGet;
+        }
+
+        private string TrueString = "Admin";
+        private string FalseString = "User";
+        private string NullString = "User";
+
+        private string OnGet(bool? value)
+        {
+            try
+            {
+                return (value == true) ? TrueString : FalseString;
+            }
+            catch (Exception e)
+            {
+                UpdateGetError("Conversion error: " + e.Message);
+                return NullString;
+            }
+        }
+
+        private bool? OnSet(string arg)
+        {
+            if (arg == null)
+                return null;
+            try
+            {
+                if (arg == TrueString)
+                    return true;
+                if (arg == FalseString)
+                    return false;
+                else
+                    return null;
+            }
+            catch (FormatException e)
+            {
+                UpdateSetError("Conversion error: " + e.Message);
+                return null;
+            }
+        }
+
+    }
+
+
+}

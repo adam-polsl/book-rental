@@ -1,0 +1,84 @@
+﻿@page "/login"
+@layout LoginLayout
+@inject NavigationManager navigationManager
+@inject IdentityAuthenticationStateProvider authStateProvider
+<PageTitle>Login</PageTitle>
+      
+<h1 class="h2 font-weight-normal login-title">
+    Blazor Web App POLSL
+</h1>
+<EditForm class="form-signin" OnValidSubmit="OnSubmit" Model="loginParameters" Context="co">
+    <DataAnnotationsValidator />
+    <h4 class="font-weight-normal text-center">Login</h4>
+
+    <label for="inputUsername" class="sr-only">User Name</label>
+    <InputText id="inputUsername" class="form-control" @bind-Value="loginParameters.UserName" autofocus placeholder="Username" />
+    <ValidationMessage For="@(() => loginParameters.UserName)" />
+
+    <label for="inputPassword" class="sr-only">Password</label>
+    <InputText type="password" id="inputPassword" class="form-control" placeholder="Password" @bind-Value="loginParameters.Password" />
+    <ValidationMessage For="@(() => loginParameters.Password)" />
+
+    <div class="form-check m-3">
+        <InputCheckbox id="inputRememberMe" class="form-check-input" @bind-Value="@loginParameters.RememberMe" />
+        <label class="form-check-label" for="inputRememberMe">Remember Me</label>
+    </div>
+
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+
+    <label class="text-danger">@Error</label>
+    
+    <NavLink href="register">
+        <h6 class="font-weight-normal text-center">Create account</h6>
+    </NavLink>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="GoogleSignIn">Google</MudButton>
+
+</EditForm>
+
+
+@code{
+    private LoginParameters loginParameters { get; set; } = new LoginParameters();
+    private string? Error { get; set; }
+
+    async Task OnSubmit()
+    {
+        Error = null;
+        try
+        {
+            await authStateProvider.Login(loginParameters);
+            navigationManager.NavigateTo("");
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await IsAuthenticated();
+    }
+    private int count = 0;
+    private async Task IsAuthenticated()
+    {
+
+        if(await authStateProvider.IsAuthenticated())
+        {
+            navigationManager.NavigateTo("",true);
+        }
+        else
+        {
+            if(count < 1)
+            {
+                Task.Delay(1000).ContinueWith(async(x)=>await IsAuthenticated());
+            }
+        }
+        count++;
+    }
+
+    private void GoogleSignIn()
+    {
+        navigationManager.NavigateTo("api/Authorize/GoogleSignIn", true);
+    }
+}

@@ -1,0 +1,22 @@
+﻿@page "/"
+@attribute [Authorize]
+
+<PageTitle>Index</PageTitle>
+<MudPaper Height="100%" Width="100%" Class="mud-theme-primary" MinHeight="500px">
+    <MudContainer>
+            <AuthorizeView>
+                <Authorized>
+                    <h1>Hello @context.User.Identity.Name!</h1>
+
+                    <h2>Welcome to online book rental</h2>
+
+                </Authorized>
+                <Authorizing>
+                    <h1>Loading ...</h1>
+                </Authorizing>
+                <NotAuthorized>
+                    <h1> What you doin' here?</h1>
+                </NotAuthorized>
+            </AuthorizeView>
+    </MudContainer>
+</MudPaper>

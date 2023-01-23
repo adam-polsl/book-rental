@@ -1,0 +1,110 @@
+﻿@page "/bookDetails/{bookId:long}"
+@using BlazorStudiesProject.Shared.Dtos;
+@using BlazorStudiesProject.Shared.Dtos.Book;
+@inject HttpClient Http;
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Book @BookId details page</PageTitle>
+
+<MudCard>
+    <MudCardContent>
+        @if (Book != null)
+        {
+            <MudCardMedia Image="@Book.ImageUrl" Height="300" />
+            <MudCardContent>
+                <MudText Typo="Typo.h5">@Book.Title</MudText>
+                <MudText Typo="Typo.body2">@Book.Author</MudText>
+            </MudCardContent>
+        }
+
+        @if (AdditionalInfoDto != null)
+        {
+            <MudChip Disabled="true" Variant="Variant.Filled" Color="Color.Dark">@(AdditionalInfoDto.Price * 1.0 / 100) $</MudChip>
+            @if (UserInfoDto != null)
+            {
+                <MudChip Disabled="true" Color="Color.Success">@(@UserInfoDto.Owned ? "Owned" : "Not Owned")</MudChip>
+
+            }
+            <MudTextField T="string" Variant="Variant.Outlined" ReadOnly="true" Label="Description" Lines="3" Text="@AdditionalInfoDto.Description" />
+            
+
+
+        }
+
+        @if (UserInfoDto != null)
+        {
+            <MudText Align="Align.Left">Current Page<MudChip Align="Align.Left" Color="Color.Secondary">@UserInfoDto.CurrentPage</MudChip></MudText>            
+            <MudContainer MaxWidth="MaxWidth.Small" Style="box-sizing:content-box">
+
+
+                @if (UserInfoDto?.Owned is bool a && a)
+                {
+                    <MudTextField @bind-Value="@UserInfoDto.ValidUntill" Format="yyyy/MM/dd hh:mm" Label="Valid untill" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="@ContentLink()">Go To Content</MudButton>
+                }
+                else
+                {
+                    <MudTextField @bind-Value="CodeText" Label="Book Code" Variant="Variant.Outlined"></MudTextField>
+                    <MudContainer>
+                        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="ActivateCode">Activate</MudButton>
+
+                    </MudContainer>
+                }
+            </MudContainer>
+        }
+    </MudCardContent>
+</MudCard>
+
+
+
+
+@code {
+    public string CodeText { get; set; }
+    private string ContentLink() => $"/bookContent/{BookId}/{UserInfoDto.CurrentPage}";
+
+
+    [Parameter]
+    public long? BookId { get; set; }
+
+    private AdditionalInfoDto? AdditionalInfoDto { get; set; }
+
+    private BookUserInfoDto? UserInfoDto { get; set; }
+    private DisplayBookDto? Book { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserInfoDto = await GetBookUserInfoDtoAsync();
+        AdditionalInfoDto = await Http.GetFromJsonAsync<AdditionalInfoDto>($"api/AdditionalInfo/{BookId}");
+        Book = await Http.GetFromJsonAsync<DisplayBookDto>($"api/Books/{BookId}");
+    }
+
+    protected async Task ActivateCode()
+    {
+        try
+        {
+            var result = await Http.PostAsJsonAsync<CodeDto>($"api/Purchases/Activate", new CodeDto { Code = CodeText });
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new Exception("...");
+            }
+            Snackbar.Add("Book Added Successfuly", Severity.Success);
+            UserInfoDto = await GetBookUserInfoDtoAsync();
+            StateHasChanged();
+
+
+        }
+        catch
+        {
+            Snackbar.Add("Invalid code", Severity.Error);
+        }
+    }
+
+    protected async Task<BookUserInfoDto> GetBookUserInfoDtoAsync()
+    {
+        return await Http.GetFromJsonAsync<BookUserInfoDto>($"api/BookUser/{BookId}");
+    }
+
+
+
+}

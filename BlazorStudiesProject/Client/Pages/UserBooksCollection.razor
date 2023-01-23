@@ -1,0 +1,40 @@
+﻿@page "/userBooksCollection"
+@using BlazorStudiesProject.Shared.Dtos.Book;
+@inject HttpClient Http
+@attribute [Authorize]
+
+<PageTitle>User Books Collection</PageTitle>
+<div></div>
+
+@if (Books != null)
+{
+    <MudContainer>
+        @foreach (var book in Books)
+        {
+            <MudNavLink Href="@BookDetailLink(book.Id)">
+                <MudCard >
+                    <MudCardMedia Image="@book.ImageUrl" Height="300"/>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h5">@book.Title</MudText>
+                        <MudText Typo="Typo.body2">@book.Author</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudNavLink>
+        }
+    </MudContainer>
+}
+else
+{
+    <p>not loaded</p>
+}
+
+
+@code {
+    private string BookDetailLink(long id) => $"/bookDetails/{id}";
+    private IList<DisplayBookDto>? Books { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Books = await Http.GetFromJsonAsync<IList<DisplayBookDto>>("api/BookUser/UserBooks");
+    }
+}

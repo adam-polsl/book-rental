@@ -1,0 +1,24 @@
+﻿@inject NavigationManager navigationManager
+@inject IdentityAuthenticationStateProvider authStateProvider
+<AuthorizeView>
+    <Authorized>
+        <div class="loader loader-bouncing">
+            <span>You don't have sufficient permissions to access this element @(endpoint ?? "")</span>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+
+@code{
+    private string? endpoint = null!;
+    protected async override Task OnInitializedAsync()
+    {
+        if(!await authStateProvider.IsAuthenticated())
+        {
+            navigationManager.NavigateTo("/login");
+            return;
+        }
+
+        endpoint = $"({navigationManager.Uri.Replace(navigationManager.BaseUri, "")})";
+    }
+}

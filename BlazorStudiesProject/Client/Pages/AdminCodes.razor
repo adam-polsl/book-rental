@@ -1,0 +1,83 @@
+﻿@page "/admin/codes"
+@using BlazorStudiesProject.Shared.Dtos;
+@inject ISnackbar Snackbar
+@inject HttpClient Http;
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Codes Page </PageTitle>
+<MudContainer MaxWidth="MaxWidth.Small">
+    <MudCard>
+        <MudTextField @bind-Value="@NewCode.Code" Label="Code" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudTextField @bind-Value="@NewCode.BookId" Label="Book Id" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudTextField @bind-Value="@NewCode.MoneyPaid" Label="Price" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="AddNewCode">Add New Code</MudButton>
+    </MudCard>
+</MudContainer>
+
+<MudTable Items="@Codes" Hover="true" Loading="@_loading" Breakpoint="Breakpoint.Sm" LoadingProgressColor="Color.Info">
+    <HeaderContent>
+        <MudTh>Code</MudTh>
+        <MudTh>BookId</MudTh>
+        <MudTh>Price </MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Code">
+            <MudText Typo="Typo.body2">@context.Code</MudText>
+        </MudTd>
+        <MudTd DataLabel="BookId">
+            <MudText Typo="Typo.body2">@context.BookId</MudText>
+        </MudTd>
+        <MudTd DataLabel="Price">
+            <MudText Typo="Typo.body2">@context.MoneyPaid</MudText>
+
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private IEnumerable<CreateCodeDto>? Codes { get; set; } = Array.Empty<CreateCodeDto>();
+    private bool _loading = true;
+    private CreateCodeDto NewCode { get; set; } = new();
+    protected override async Task OnInitializedAsync()
+    {
+        GetCodes();
+    }
+
+    private async Task GetCodes()
+    {
+        Codes = await Http.GetFromJsonAsync<IList<CreateCodeDto>>($"api/Purchases/Code");
+        await Task.Delay(1000);
+        _loading = false;
+        StateHasChanged();
+    }
+
+    private async Task AddNewCode()
+    {
+        if (string.IsNullOrEmpty(NewCode.Code)
+        || NewCode.BookId < 0
+        || NewCode.MoneyPaid < 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await Http.PostAsJsonAsync<CreateCodeDto>("api/Purchases/Code", NewCode);
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new Exception("...");
+            }
+            Snackbar.Add("Code Added Successfuly", Severity.Success);
+            await GetCodes();
+            StateHasChanged();
+
+        }
+        catch
+        {
+            Snackbar.Add("Code Addtion Failed!", Severity.Error);
+
+        }
+    }
+
+
+}

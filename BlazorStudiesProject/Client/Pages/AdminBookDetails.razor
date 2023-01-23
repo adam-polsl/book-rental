@@ -1,0 +1,118 @@
+﻿@page "/admin/book/{bookId:long}"
+@page "/admin/book"
+@using BlazorStudiesProject.Shared.Dtos;
+@using BlazorStudiesProject.Shared.Dtos.Book;
+@inject HttpClient Http;
+@inject NavigationManager navigationManager;
+@inject ISnackbar Snackbar
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Book Admin Page</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Medium">
+    <MudTextField @bind-Value="Book.Title" Label="Title" Variant="Variant.Text" Tex t="@Book.Title" />
+    <MudTextField @bind-Value="Book.Author" Label="Author" Variant="Variant.Text" Text="@Book.Author" />
+    <MudTextField @bind-Value="Book.Price" Label="Price" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AttachMoney" AdornmentColor="Color.Warning" />
+    <MudTextField @bind-Value="Book.Description" Label="Description" Variant="Variant.Text" Text="@Book.Description" Lines="5" />
+    <MudTextField @bind-Value="Book.Content" Label="Content" Variant="Variant.Text" Text="@Book.Content" Lines="10" />
+    @if (BookId == null)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="AddBook">Add Book</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="GetRandomCover">Get new duck cover</MudButton>
+        <br />
+        <MudImage Src="@Book.ImageUrl" Height="600" />
+
+    }
+    else
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="EditBook">Update</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="DeleteBook">Delete</MudButton>
+    }
+    </MudContainer>
+
+
+    @code {
+    [Parameter]
+    public long? BookId { get; set; }
+
+    private BookDto Book { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (BookId != null)
+        {
+            Book = await Http.GetFromJsonAsync<BookDto>($"api/Books/{BookId}");
+        }
+        else
+        {
+            await GetRandomCover();
+        }
+    }
+    private void NavigateToBookList()
+    {
+        navigationManager.NavigateTo("/admin/booksCollection");
+    }
+
+
+    private async Task AddBook()
+    {
+        try
+        {
+            var result = await Http.PostAsJsonAsync<BookDto>($"api/Books", Book);
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new Exception("...");
+            }
+            Snackbar.Add("Book Added Successfuly", Severity.Success);
+            NavigateToBookList();
+        }
+        catch
+        {
+            Snackbar.Add("Adding book failed", Severity.Error);
+
+        }
+    }
+
+    private async Task EditBook()
+    {
+        try
+        {
+            var result = await Http.PutAsJsonAsync<BookDto>($"api/Books/{Book.Id}", Book);
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new Exception("...");
+            }
+            Snackbar.Add("Book edited Successfuly", Severity.Success);
+            NavigateToBookList();
+        }
+        catch
+        {
+            Snackbar.Add("Edditing book failed", Severity.Error);
+
+        }
+    }
+
+    private async Task DeleteBook()
+    {
+        try
+        {
+            var result = await Http.DeleteAsync($"api/Books/{Book.Id}");
+            if (!result.IsSuccessStatusCode)
+            {
+                throw new Exception("...");
+            }
+            Snackbar.Add("Book removed Successfuly", Severity.Success);
+            NavigateToBookList();
+        }
+        catch
+        {
+            Snackbar.Add("Removing book failed", Severity.Error);
+
+        }
+    }
+
+    private async Task GetRandomCover()
+    {
+        var dukResponse = await Http.GetFromJsonAsync<DukResponse>("api/Books/Duck");
+        Book.ImageUrl = dukResponse.Url;
+    }
+}

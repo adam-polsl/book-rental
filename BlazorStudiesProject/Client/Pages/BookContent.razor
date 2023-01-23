@@ -1,0 +1,67 @@
+﻿@page "/bookContent/{bookId:long}/{currentPage:int}"
+@using BlazorStudiesProject.Shared.Dtos;
+@inject HttpClient Http;
+@attribute [Authorize]
+
+<PageTitle>BookContent page </PageTitle>
+
+@if(Content != null)
+{
+    <p>Content:</p>
+    <p>Current Page: @CurrentPage</p>
+    <p>@Content.Text</p>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@PreviousPage">Previous Page</MudButton>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="@NextPage">Next Page</MudButton>
+
+}
+else
+{
+    <p>U don't have active subscription for this book!</p>
+}
+
+@code {
+    [Parameter]
+    public long BookId { get; set; }
+
+    [Parameter]
+    public int? CurrentPage { get; set; } = 1;
+    private ContentDto? Content { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        await GetContent();
+    }
+
+    private async Task GetContent()
+    {
+        try
+        {
+            Content = await Http.GetFromJsonAsync<ContentDto>($"api/BookUser/BookContent/{BookId}/{CurrentPage}");
+
+        }catch
+        {
+        } 
+    }
+
+    private async Task NextPage()
+    {
+        CurrentPage++;
+        await GetContent();
+        StateHasChanged();
+
+
+    }
+
+    private async Task PreviousPage()
+    {
+        if(CurrentPage == 1)
+        {
+            return;
+        }
+
+        CurrentPage--;
+        await GetContent();
+        StateHasChanged();
+
+    }
+}
